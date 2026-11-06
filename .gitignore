@@ -1,0 +1,32 @@
+# ---- 密钥与本地配置（最重要，放最前）----
+.env
+.env.*
+!.env.example
+
+# ---- 运行时产物 ----
+data/
+logs/
+*.db
+*.sqlite3
+*.jsonl
+__pycache__/
+*.py[cod]
+
+# ---- 虚拟环境 ----
+venv/
+.venv/
+env/
+
+# ---- 编辑器 / 系统 ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- 测试与检查缓存 ----
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- 本地操作笔记（不进仓库）----
+PUSH-TO-GITHUB.md

@@ -1,0 +1,6 @@
+openai>=1.40.0
+pymysql>=1.1.0
+
+# 记忆体系不引入额外依赖：
+#   存储用标准库 sqlite3，向量检索用内置 math + array（BLOB），trace 双写 SQLite/JSONL。
+#   若要接真实量库（Chroma/Milvus/pgvector），替换 harness/long_term.py 的 recall() 候选集来源即可。
