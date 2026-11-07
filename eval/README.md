@@ -11,15 +11,17 @@
 
 ```bash
 ./venv/Scripts/python.exe eval/eval_budget.py          # 离线，几秒
-./venv/Scripts/python.exe eval/eval_run.py             # 全量 20 条，约 5-10 分钟
+./venv/Scripts/python.exe eval/eval_run.py             # 全量 20 条，约 2 分钟
 ./venv/Scripts/python.exe eval/eval_run.py T07 T18     # 只跑指定任务
 ```
 
 ## 隔离（都不碰真实数据）
 
 - MySQL 用独立表 `student_scores_eval`（`LIKE student_scores` 克隆 + 12 行种子，跑完 `DROP`）
-- SQLite 记忆库 / checkpoint / trace 通过 `HARNESS_DB` / `HARNESS_DATA_DIR` 重定向到 `eval/data/`（已 gitignore）
-- 种子数据在 `eval_tasks.py` 的 `SEED_ROWS`，所有期望值由它推出
+- SQLite 记忆库 / checkpoint / trace 通过 `HARNESS_DB` / `HARNESS_DATA_DIR` / `HARNESS_LOG_DIR` 重定向到 `eval/data/`（已 gitignore）
+- 每次运行前清空 `eval/data/` 里的记忆库：否则上一轮写下的长期记忆会被召回，模型可能不查库直接照抄上次结果
+- `eval/.run.lock` 独占锁：两场评测并发会互相 DROP/CREATE 同一张评测表、共用记忆库，数字不可信
+- 种子数据在 `eval_tasks.py` 的 `SEED_ROWS`，所有期望值由它推出（与 `sql/init.sql` 同源）
 
 ## 任务构成（20 条）
 
