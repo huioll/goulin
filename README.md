@@ -1,19 +1,21 @@
-# 学生库 Agent · ReAct + 三层记忆
+# 学生数据库记忆 Agent
 
-同一个学生数据库（`school_db.student_scores`）、同一套 5 个工具，这里有两个层次不同的实现：
+一个能操作 MySQL 学生成绩库（`school_db.student_scores`）的 ReAct Agent。
+5 个工具负责增删改查，三层记忆让它**长会话不失忆、重启能续跑、跨会话记得结论**。
 
-| 版本 | 文件 | 范式 | 记忆 |
-| --- | --- | --- | --- |
-| 无记忆基线 | `agent_react.py` | 经典 ReAct（Thought→Action→Observation） | 只有一条不断 append 的 messages 列表 |
-| 带记忆版 | `memory_agent.py` + `harness/` | ReAct + Harness 记忆体系 | 短期 / 结构化状态 / 长期向量，每轮重新装配 |
+入口是 `memory_agent.py`，记忆内核在 `harness/`。
 
-（另有一个更早的 `../student-agent-console/agent.py`，是"一次 tool_calls 就执行完"的 Plan-and-Execute 版，用于对照。）
+## 一、它解决什么问题
 
-## 一、为什么不能"简单追加聊天消息"
+普通的 ReAct Agent 把 `messages` 一路 `append` 下去，跑到第八轮就会撞上三堵墙：
 
-`agent_react.py` 的做法是 `messages.append(...)`：上下文无限增长、旧信息挤占窗口、重启即失忆、也没法区分"用户偏好"和"上一轮查到的一行数据"。
+| 症状 | 后果 |
+| --- | --- |
+| 上下文线性膨胀 | 旧信息挤占窗口，越往后越贵，最终必然超出上限 |
+| 重启即失忆 | 进程一关，做到哪一步全没了，只能从头再来 |
+| 分不清轻重 | "用户偏好"和"上一轮查到的一行数据"以同样权重堆在同一个列表里 |
 
-`memory_agent.py` 每轮都**从三层记忆重新装配**一个全新的 `messages`（永远只有 system + user 两条）：
+这里的做法是：**每轮都从三层记忆重新装配上下文**，产出的 `messages` 永远只有 system + user 两条。
 
 ```
 第 N 轮
@@ -31,8 +33,8 @@
 
 ```
 student-agent-react/
-├── agent_react.py            # 无记忆 ReAct 基线（保持不变）
-├── memory_agent.py           # 带记忆的入口
+├── memory_agent.py           # 入口：交互、恢复、查看
+├── agent_react.py            # 附录：无记忆基线，仅用于回溯对照（见文末）
 ├── tools.py                  # 5 个数据库工具 + 环境指纹 / 产物哈希
 ├── harness/
 │   ├── config.py             # 预算、阈值、TTL、路径
@@ -40,7 +42,7 @@ student-agent-react/
 │   ├── store.py              # SQLite：short_memory / task_state / long_memory / trace
 │   ├── trace.py              # 双写 trace（SQLite + JSONL）
 │   ├── embedding.py          # OpenAI / 本地特征哈希 双后端
-│   ├── short_term.py         # 短期记忆 + 三级降级
+│   ├── short_term.py         # 短期记忆 + 四级降级
 │   ├── task_state.py         # checkpoint + 恢复校验
 │   ├── long_term.py          # 向量记忆 + TTL / 矛盾抑制 / 召回
 │   ├── context.py            # 上下文装配器
@@ -187,3 +189,13 @@ python -m unittest discover -s tests -v
 - **向量检索是内存暴力扫描**，几万条以内没问题；上规模换 Chroma / pgvector，接口已收在 `LongTermMemory.recall()`。
 - **恢复校验只核对"数据库现场"，不做自动修复**（修复可能产生副作用）；发现不一致就降级为 `unknown`，交给下一轮模型重新核实——宁可重查，不可编造。
 - 长期记忆抽取是正则 + 规则，不额外调模型（省钱、可解释）；要更强抽取可以在 `extract_and_store()` 里挂一个小模型。
+
+## 附录 · 无记忆基线（`agent_react.py`）
+
+`agent_react.py` 是同一套业务工具的**无记忆版本**：单文件 801 行、只保留最近 4 轮问答、不落盘，不依赖 `harness/`。
+
+它不参与主线，保留它的理由只有一个：想验证"记忆到底有没有用"时，用它跑同一个问题做对照。
+
+```bash
+python agent_react.py     # 可选，仅用于对照
+```
