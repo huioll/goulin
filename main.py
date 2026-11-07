@@ -44,7 +44,7 @@ from harness.tokens import clip_chars, estimate_tokens
 from harness.trace import Tracer
 import tools as T
 
-API_KEY = os.getenv("WORKBUDDY_API_KEY", "sk-6fc1c3abef954df59420c0256d3c5b02")
+API_KEY = os.getenv("WORKBUDDY_API_KEY", "")   # 绝不写默认值：密钥只走 .env / 环境变量
 BASE_URL = os.getenv("WORKBUDDY_BASE_URL", "https://api.deepseek.com/v1")
 MODEL = os.getenv("WORKBUDDY_MODEL", "deepseek-chat")
 
