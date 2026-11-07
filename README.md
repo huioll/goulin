@@ -3,7 +3,7 @@
 一个能操作 MySQL 学生成绩库（`school_db.student_scores`）的 ReAct Agent。
 5 个工具负责增删改查，三层记忆让它**长会话不失忆、重启能续跑、跨会话记得结论**。
 
-入口是 `memory_agent.py`，记忆内核在 `harness/`。
+入口是 `main.py`，记忆内核在 `harness/`。
 
 ## 一、它解决什么问题
 
@@ -33,7 +33,7 @@
 
 ```
 student-agent-react/
-├── memory_agent.py           # 入口：交互、恢复、查看
+├── main.py                   # 入口：交互、恢复、查看
 ├── agent_react.py            # 附录：无记忆基线，仅用于回溯对照（见文末）
 ├── tools.py                  # 5 个数据库工具 + 环境指纹 / 产物哈希
 ├── harness/
@@ -127,11 +127,11 @@ copy .env.example .env                   # Windows
 cp .env.example .env                     # macOS / Linux
 
 # 2. 启动
-python memory_agent.py              # 交互
-python memory_agent.py --trace      # 交互 + 每条 trace
-python memory_agent.py --task t-xxx # 恢复某个任务（会先做恢复校验）
-python memory_agent.py --show t-xxx # 离线看 checkpoint + 该任务 trace
-python memory_agent.py --stats      # 离线看记忆统计
+python main.py              # 交互
+python main.py --trace      # 交互 + 每条 trace
+python main.py --task t-xxx # 恢复某个任务（会先做恢复校验）
+python main.py --show t-xxx # 离线看 checkpoint + 该任务 trace
+python main.py --stats      # 离线看记忆统计
 ```
 
 `.env` 里必填的只有三项：`WORKBUDDY_API_KEY`、`WORKBUDDY_BASE_URL`、`MYSQL_PASSWORD`。

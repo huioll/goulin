@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """数据库工具（与 agent_react.py 中同一套：4 个 CRUD + 1 个只读检索）。
 
-抽成独立模块，供 memory_agent.py（带记忆版）使用；无记忆基线 agent_react.py 保持自带实现、可单独运行。
+抽成独立模块，供 main.py（主线入口）使用；无记忆基线 agent_react.py 保持自带实现、可单独运行。
 """
 
 import inspect

@@ -11,10 +11,11 @@
         → 回到装配，直到模型给 Final Answer
 
 运行：
-    python memory_agent.py                 # 交互
-    python memory_agent.py --trace         # 交互 + 打印每条 trace
-    python memory_agent.py --show t-xxx    # 看某个任务的 checkpoint
-    python memory_agent.py --stats         # 看长期记忆/短期记忆/任务统计
+    python main.py              # 交互
+    python main.py --trace      # 交互 + 打印每条 trace
+    python main.py --task t-xxx # 恢复某个任务（会先做恢复校验）
+    python main.py --show t-xxx # 看某个任务的 checkpoint
+    python main.py --stats      # 看长期记忆/短期记忆/任务统计
 """
 
 import argparse
@@ -364,7 +365,7 @@ class MemoryReActAgent:
 def check_llm_config():
     problems = []
     if not API_KEY or "替换" in API_KEY:
-        problems.append("API Key 未配置：改 memory_agent.py 顶部的 API_KEY 或环境变量 WORKBUDDY_API_KEY")
+        problems.append("API Key 未配置：复制 .env.example 为 .env 并填写 WORKBUDDY_API_KEY")
     if not BASE_URL or "your-workbuddy-host" in BASE_URL:
         problems.append("接口地址未配置：改 BASE_URL（OpenAI 兼容地址，一般以 /v1 结尾）")
     if not MODEL or "your-model-name" in MODEL:
