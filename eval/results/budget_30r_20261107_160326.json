@@ -1,0 +1,285 @@
+{
+  "summary": {
+    "rounds": 30,
+    "budget": 3200,
+    "peak_tokens": 1231,
+    "over_budget_rounds": 0,
+    "degraded_rounds": 24,
+    "stage_tally": {
+      "dedupe": 30
+    },
+    "round1_evidence_kept": true
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "total_tokens": 1096,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 2,
+      "total_tokens": 1129,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 3,
+      "total_tokens": 1145,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 4,
+      "total_tokens": 1160,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 5,
+      "total_tokens": 1177,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 6,
+      "total_tokens": 1193,
+      "degraded": false,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 7,
+      "total_tokens": 1199,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 8,
+      "total_tokens": 1204,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 9,
+      "total_tokens": 1210,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 10,
+      "total_tokens": 1216,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 11,
+      "total_tokens": 1222,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 12,
+      "total_tokens": 1228,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 13,
+      "total_tokens": 1228,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 14,
+      "total_tokens": 1228,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 15,
+      "total_tokens": 1230,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 16,
+      "total_tokens": 1230,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 17,
+      "total_tokens": 1230,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 18,
+      "total_tokens": 1230,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 19,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 20,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 21,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 22,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 23,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 24,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 25,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 26,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 27,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 28,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 29,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    },
+    {
+      "round": 30,
+      "total_tokens": 1231,
+      "degraded": true,
+      "stages": [
+        "raw",
+        "dedupe"
+      ]
+    }
+  ]
+}

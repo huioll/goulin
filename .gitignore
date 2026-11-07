@@ -30,3 +30,7 @@ Thumbs.db
 
 # ---- 本地操作笔记（不进仓库）----
 PUSH-TO-GITHUB.md
+
+# ---- 评测运行产物（eval/ 的源码与 results/ 会入库，运行时库不入）----
+eval/data/
+eval/.run.lock

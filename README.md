@@ -35,6 +35,8 @@
 student-agent-react/
 ├── main.py                   # 入口：交互、恢复、查看
 ├── tools.py                  # 5 个数据库工具 + 环境指纹 / 产物哈希
+├── sql/init.sql              # 建库 + 建表 + 12 行种子数据（第 0 步，幂等）
+├── docker-compose.yml        # 一条命令起 MySQL 8，首启自动执行 init.sql
 ├── harness/
 │   ├── config.py             # 预算、阈值、TTL、路径
 │   ├── tokens.py             # token 估算（不依赖 tiktoken）
@@ -46,6 +48,12 @@ student-agent-react/
 │   ├── long_term.py          # 向量记忆 + TTL / 矛盾抑制 / 召回
 │   ├── context.py            # 上下文装配器
 │   └── protocol.py           # ReAct 文本协议解析
+├── tests/test_harness.py     # 6 个离线回归用例（不连库、不调模型）
+├── eval/
+│   ├── eval_run.py           # 20 任务在线评测（临时表 + 独立记忆库，跑完即删）
+│   ├── eval_tasks.py         # 任务定义与 check 判定
+│   ├── eval_budget.py        # 30 轮长会话预算压测（离线）
+│   └── results/              # 每次评测的 JSON 结果（可入库当证据）
 ├── data/harness.db           # 记忆库（首次运行自动创建）
 ├── data/tasks/<task>.json    # checkpoint 的人可读镜像
 └── logs/trace/trace-*.jsonl  # trace 的 JSONL 镜像
@@ -121,6 +129,10 @@ student-agent-react/
 cd student-agent-react
 pip install -r requirements.txt          # openai + pymysql
 
+# 0. 起数据库（二选一，都会建出 school_db.student_scores 并灌 12 行种子）
+docker compose up -d                     # A. 有 Docker：首启自动执行 sql/init.sql
+mysql -u root -p < sql/init.sql          # B. 本地已有 MySQL：手工导入
+
 # 1. 配置密钥：复制模板后填写（.env 已在 .gitignore，不会被提交）
 copy .env.example .env                   # Windows
 cp .env.example .env                     # macOS / Linux
@@ -132,6 +144,8 @@ python main.py --task t-xxx # 恢复某个任务（会先做恢复校验）
 python main.py --show t-xxx # 离线看 checkpoint + 该任务 trace
 python main.py --stats      # 离线看记忆统计
 ```
+
+`sql/init.sql` 是幂等的（`CREATE ... IF NOT EXISTS` + `INSERT IGNORE` 固定主键），重复执行不会覆盖已有数据；用 Docker 时 `MYSQL_PASSWORD` 会同时作为容器 root 密码（compose 自动读同目录 `.env`）。种子数据与 `eval/eval_tasks.py` 的 `SEED_ROWS` 同源，改一边要同步另一边。
 
 `.env` 里必填的只有三项：`WORKBUDDY_API_KEY`、`WORKBUDDY_BASE_URL`、`MYSQL_PASSWORD`。
 其余参数（预算、阈值、TTL、路径）全在 `harness/config.py`，同样支持环境变量覆盖。
@@ -161,7 +175,36 @@ python main.py --stats      # 离线看记忆统计
 [统计] 3 轮思考，2 次工具调用，上下文 1276 tok
 ```
 
-## 六、测试
+## 六、评测（`eval/`）
+
+两套互相独立的评测，回答两个不同的问题；细节见 `eval/README.md`。
+
+| 脚本 | 测什么 | 要不要调模型 | 产出 |
+| --- | --- | --- | --- |
+| `eval_run.py` | Agent 能不能把任务真正做完 | 要（deepseek-chat） | 20 条任务成功率 |
+| `eval_budget.py` | 记忆机制在长会话下稳不稳 | 不要（离线，几秒） | 预算 / 降级 / 证据保留 |
+
+```bash
+./venv/Scripts/python.exe eval/eval_budget.py          # 离线压测
+./venv/Scripts/python.exe eval/eval_run.py             # 全量 20 条，约 5-10 分钟
+./venv/Scripts/python.exe eval/eval_run.py T07 T18     # 只跑指定任务
+```
+
+**判定口径**：每条任务带 `check(answers, db)`，同时核对**最终答案**和**数据库终态**——
+不是只看模型说没说自己做完了。20 条分五类：单工具查询 6 / 多步 4 / 写后读 4 / 删除校验 3 / 记忆续用 3。
+
+**隔离**（都不碰真实数据）：
+
+- MySQL：建临时表 `student_scores_eval`（`CREATE TABLE ... LIKE student_scores` + 12 行种子，跑完 `DROP`）；
+- 记忆库 / checkpoint / trace：通过 `HARNESS_DATA_DIR` / `HARNESS_DB` / `HARNESS_LOG_DIR` 重定向到 `eval/data/`（已 gitignore）；
+- 每次运行前清空记忆库：否则上一轮的长期记忆会被召回，模型可能不查库直接照抄上次的结果；
+- `eval/.run.lock` 独占锁：两场评测并发会互相重置同一张评测表、共用记忆库，数字就不可信了。
+
+最近一次结果（2026-11-07，deepseek-chat）：**20/20 通过**；离线 30 轮压测上下文峰值 1231 / 3200 tok，
+0 轮超预算，24/30 轮触发降级，第 1 轮用户原话到第 30 轮仍在上下文里。明细见 `eval/results/`
+（`eval_tasks_20261107_161833.json` / `budget_30r_20261107_160326.json`）。
+
+## 七、测试
 
 ```bash
 python -m unittest discover -s tests -v
@@ -182,7 +225,7 @@ python -m unittest discover -s tests -v
 `test_protected_record_survives_degrade` 和 `test_conflicting_fact_supersedes_old` 是回归用例——
 它们各自对应修复过的一个真实缺陷，详见 git log（`fix:` 开头的两条）。
 
-## 七、已知取舍
+## 八、已知取舍
 
 - **token 估算是启发式**（中文 1 字 ≈ 1 tok，其他 4 字符 ≈ 1 tok），宁可高估；换 tiktoken 只需替换 `harness/tokens.py`。
 - **向量检索是内存暴力扫描**，几万条以内没问题；上规模换 Chroma / pgvector，接口已收在 `LongTermMemory.recall()`。

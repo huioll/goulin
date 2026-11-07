@@ -44,7 +44,7 @@ from harness.tokens import clip_chars, estimate_tokens
 from harness.trace import Tracer
 import tools as T
 
-API_KEY = os.getenv("WORKBUDDY_API_KEY", "")
+API_KEY = os.getenv("WORKBUDDY_API_KEY", "sk-6fc1c3abef954df59420c0256d3c5b02")
 BASE_URL = os.getenv("WORKBUDDY_BASE_URL", "https://api.deepseek.com/v1")
 MODEL = os.getenv("WORKBUDDY_MODEL", "deepseek-chat")
 
@@ -58,22 +58,22 @@ def _short(obj, limit: int = 80) -> str:
 class MemoryReActAgent:
     def __init__(self, client, model: str = MODEL, session_id: str = None,
                  task_id: str = None, verbose: bool = True, echo_trace: bool = False,
-                 max_steps: int = config.REACT_MAX_STEPS):
+                 max_steps: int = config.REACT_MAX_STEPS):#echo_trace是否把追踪记录详细打印
         self.client = client
-        self.model = model
-        self.session_id = session_id or f"s-{datetime.now():%Y%m%d-%H%M%S}"
-        self.requested_task_id = task_id
-        self.verbose = verbose
-        self.max_steps = max_steps
+        self.model = model#模型名称
+        self.session_id = session_id or f"s-{datetime.now():%Y%m%d-%H%M%S}"#会话ID
+        self.requested_task_id = task_id#任务ID
+        self.verbose = verbose#是否打印详细日志
+        self.max_steps = max_steps#最大步数
 
-        config.ensure_dirs()
-        self.store = Store()
-        self.tracer = Tracer(self.store, self.session_id, None, echo=echo_trace)
-        self.embedder = Embedder(client=client, tracer=self.tracer)
-        self.stm = ShortTermMemory(self.store, self.session_id, None, self.tracer)
-        self.states = TaskStateManager(self.store, self.tracer)
-        self.ltm = LongTermMemory(self.store, self.embedder, self.tracer)
-        self.assembler = ContextAssembler(T.TOOL_DOCS, self.tracer)
+        config.ensure_dirs()#自动创建需要的文件夹，用来存记忆，追踪文件
+        self.store = Store()#存储管理器
+        self.tracer = Tracer(self.store, self.session_id, None, echo=echo_trace)#追踪记录器
+        self.embedder = Embedder(client=client, tracer=self.tracer)#嵌入生成器
+        self.states = TaskStateManager(self.store, self.tracer)#任务状态管理器
+        self.ltm = LongTermMemory(self.store, self.embedder, self.tracer)#长期记忆管理器
+        self.assembler = ContextAssembler(T.TOOL_DOCS, self.tracer)#上下文组装器
+        self.stm = ShortTermMemory(self.store, self.session_id, None, self.tracer)#短期记忆管理器
 
         self.state = None
         self.resumed = False
@@ -101,8 +101,13 @@ class MemoryReActAgent:
                     resp = self.client.chat.completions.create(**kwargs)
                 else:
                     raise
-            if not resp.choices:
-                raise RuntimeError("模型没有返回任何 choices")
+            if resp is None or not resp.choices:
+                # 网关偶发空响应（评测里真实撞到过一次：resp 直接是 None）：
+                # 重试一次再判失败，别让一次抖动就把整条任务判死
+                time.sleep(1.0)
+                resp = self.client.chat.completions.create(**kwargs)
+            if resp is None or not resp.choices:
+                raise RuntimeError("模型连续两次没有返回任何 choices")
             content = (resp.choices[0].message.content or "").strip()
             extra["reply_chars"] = len(content)
             return content

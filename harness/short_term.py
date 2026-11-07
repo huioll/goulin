@@ -129,10 +129,20 @@ class ShortTermMemory:
         self.step = step
 
     # ------------------------------------------------------------------ 渲染
-    def _line(self, idx: int, rec: Record) -> str:
+    def _line(self, idx: int, rec: Record, latest: bool = False) -> str:
         label = KIND_LABEL.get(rec.kind, rec.kind)
-        limit = 300 if rec.protected else 220
-        body = clip_chars(rec.content.replace("\n", " ⏎ "), limit)
+        # 最新一条观测就是本轮的决策依据，按工具层已限定的上限（MAX_OBS_CHARS）完整给；
+        # 历史痕迹压到 220/300，避免一条旧结果挤占整块预算。
+        # 一次 6 行班级查询 ≈ 1000 字符，之前限 900 会把尾部行切掉，
+        # 模型只好逐个 id 补查，8 步内跑不完（评测 T04 踩过）。
+        limit = config.MAX_OBS_CHARS if latest else (300 if rec.protected else 220)
+        raw = rec.content.replace("\n", " ⏎ ")
+        if len(raw) <= limit:
+            body = raw
+        else:
+            # 截断必须显式标注：否则模型会把半截 JSON 当成完整结果——
+            # 例如 {"count": 6} 却只看到 3 行，就误判"这个班只有 3 个人"（评测 T04/T08 踩过）。
+            body = raw[:limit] + f" …（已截断，原长 {len(raw)} 字符；要完整数据请缩小查询范围或分页查）"
         prefix = ""
         if rec.kind == "observation" and rec.meta.get("tool"):
             # 观察一定要带上"哪个工具 + 成功/失败"，否则压缩后只剩一段 JSON，模型认不出证据归属
@@ -146,7 +156,9 @@ class ShortTermMemory:
     def render(self, recs: List[Record]) -> str:
         if not recs:
             return "（本轮暂无执行轨迹）"
-        return "\n".join(self._line(i, r) for i, r in enumerate(recs, 1))
+        total = len(recs)
+        return "\n".join(self._line(i, r, latest=(i == total))   # i 从 1 开始，最后一条是 total
+                         for i, r in enumerate(recs, 1))
 
     @staticmethod
     def _terms(text: str) -> set:

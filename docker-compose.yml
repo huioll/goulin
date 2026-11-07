@@ -1,0 +1,36 @@
+# 一条命令把学生库起起来：docker compose up -d
+#
+# 密码取自 .env 里的 MYSQL_PASSWORD（docker compose 会自动读同目录的 .env），
+# 没配 .env 时用下面的默认值。首次启动会自动执行 sql/init.sql 建表灌种子数据。
+#
+# 用法：
+#   docker compose up -d          # 起库
+#   docker compose logs -f mysql  # 看初始化日志
+#   docker compose down -v        # 连数据卷一起删（下次启动重新初始化）
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: student-agent-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-student_agent_pwd}
+      MYSQL_DATABASE: school_db
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  mysql-data:
