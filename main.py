@@ -69,7 +69,7 @@ class MemoryReActAgent:
         config.ensure_dirs()#自动创建需要的文件夹，用来存记忆，追踪文件
         self.store = Store()#存储管理器
         self.tracer = Tracer(self.store, self.session_id, None, echo=echo_trace)#追踪记录器
-        self.embedder = Embedder(client=client, tracer=self.tracer)#嵌入生成器
+        self.embedder = Embedder(client=client, tracer=self.tracer)#嵌入生成器，用于生成嵌入向量，把文本转成embedding
         self.states = TaskStateManager(self.store, self.tracer)#任务状态管理器
         self.ltm = LongTermMemory(self.store, self.embedder, self.tracer)#长期记忆管理器
         self.assembler = ContextAssembler(T.TOOL_DOCS, self.tracer)#上下文组装器
