@@ -104,7 +104,7 @@ class LongTermMemory:
         ).hexdigest()
 
         candidates = self.store.ltm_all(dim=dim)
-        best, best_sim = None, 0.0
+        best, best_sim, best_vec = None, 0.0, 0.0
         for row in candidates:
             if row.get("content_hash") == content_hash:
                 self.store.ltm_touch(row["id"])
@@ -113,11 +113,15 @@ class LongTermMemory:
                                       kind=kind, text=text[:80])
                 return {"action": "skip", "id": row["id"], "reason": "内容完全重复"}
             # 向量相似度 + 文本骨架相似度取大者：向量抓语义，骨架抓"同一句话改了数值"
-            sim = max(cosine(vec, from_blob(row["embedding"])), skeleton_sim(text, row["text"]))
+            vec_sim = cosine(vec, from_blob(row["embedding"]))
+            sim = max(vec_sim, skeleton_sim(text, row["text"]))
             if sim > best_sim:
-                best, best_sim = row, sim
+                best, best_sim, best_vec = row, sim, vec_sim
 
-        if best is not None and best_sim >= config.LTM_DUPLICATE_SIM:
+        # 只有向量高度接近才算"说的就是同一件事"。骨架相似度不参与这个判断——
+        # 骨架会把数字抹掉，导致「满分150」和「满分120」骨架完全相同（1.0）；
+        # 若用 max() 判重复，改过数值的新结论会被当成重复丢弃，旧的反而留着。
+        if best is not None and best_vec >= config.LTM_DUPLICATE_SIM:
             self.store.ltm_touch(best["id"])
             if self.tracer:
                 self.tracer.event("ltm.skip", reason="near_duplicate", memory_id=best["id"],

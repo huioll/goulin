@@ -301,6 +301,10 @@ class ShortTermMemory:
     def _compress_old(self, recs: List[Record]):
         keep_from = max(0, len(recs) - config.STM_KEEP_RECENT)
         old, recent = recs[:keep_from], recs[keep_from:]
+        # 保护记录不参与压缩：一旦并进摘要，它的 id 与 meta 就没了，
+        # kept_evidence 会变空，"关键证据仍可追溯"这个承诺就落不了地。
+        pinned = [r for r in old if r.protected]
+        old = [r for r in old if not r.protected]
         if not old:
             return recs, 0
         lines = [self._summary_line(r) for r in old]
@@ -314,7 +318,7 @@ class ShortTermMemory:
             tokens=estimate_tokens("\n".join(lines)), ts="",
             meta={"compressed_ids": [r.id for r in old], "pinned": True},
         )
-        return [summary] + recent, total_lines
+        return [summary] + pinned + recent, total_lines
 
     def _shrink(self, recs: List[Record], budget_tokens: int):
         # 先压摘要行本身，再只留最近窗口 + 保护记录
@@ -343,7 +347,7 @@ class ShortTermMemory:
         # 最后手段：把非最近记录裁短（仍保留首行信息，不整条丢弃）
         final = []
         for i, r in enumerate(trimmed):
-            if i >= len(trimmed) - config.STM_KEEP_RECENT:
+            if i >= len(trimmed) - config.STM_KEEP_RECENT or r.protected:
                 final.append(r)
             else:
                 short = clip_chars(r.content.replace("\n", " "), 48)
