@@ -160,9 +160,26 @@ python memory_agent.py --stats      # 离线看记忆统计
 [统计] 3 轮思考，2 次工具调用，上下文 1276 tok
 ```
 
-## 六、可验证的行为（自检 55 项全过）
+## 六、测试
 
-用假 LLM 离线跑了 6 组场景：短期记忆降级链（24 条 1442 tok → 227 tok，写操作证据仍在）、checkpoint 恢复校验（外部改一行 → 判 `needs_recheck`、待办降 `unknown`）、删除类产物反向核对、长期记忆 supersede / TTL / 冲突标签、装配预算与隔离、端到端 3 轮闭环（并断言每次请求都只有 2 条消息，证明不是 append）。测试脚本是临时的，已删除。
+```bash
+python -m unittest discover -s tests -v
+```
+
+6 个用例，**全部离线**：不连 MySQL、不调模型、不写真实 `data/` 目录（每个用例一份独立临时 SQLite，结束即销毁）。
+用标准库 `unittest`，不引入 pytest 等额外依赖，与项目零依赖的风格一致。
+
+| 用例 | 断言的是什么 |
+|---|---|
+| `test_cjk_counts_more_than_latin` | token 估算：中文 ≥ 字数，同等长度下英文明显更省 |
+| `test_stages_monotonic_and_compression_real` | 降级阶段按 `raw→dedupe→drop_low_rel→compress→shrink` 单调推进，不允许跳级回退；内容压掉一半以上，最终条数收敛到「摘要 + 最近窗口」 |
+| `test_protected_record_survives_degrade` | 预算压到 120 tok 时，保护记录的 id 仍在 `kept_evidence` 里，且原文没有被裁短 |
+| `test_ref_verify_matrix` | 产物引用五种情形：哈希一致 / 内容被外部改动 / 行已消失 / 删除类核对通过 / 删除类未删干净 |
+| `test_conflicting_fact_supersedes_old` | 同一句话改了数值 → 新结论取代旧结论，召回不再返回旧值 |
+| `test_messages_rebuilt_and_budget_respected` | 每轮 `messages` 恒为 2 条（system + user，证明不是 append），五块配额齐全，总量不超总预算 5% |
+
+`test_protected_record_survives_degrade` 和 `test_conflicting_fact_supersedes_old` 是回归用例——
+它们各自对应修复过的一个真实缺陷，详见 git log（`fix:` 开头的两条）。
 
 ## 七、已知取舍
 
