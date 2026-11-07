@@ -34,7 +34,6 @@
 ```
 student-agent-react/
 ├── main.py                   # 入口：交互、恢复、查看
-├── agent_react.py            # 附录：无记忆基线，仅用于回溯对照（见文末）
 ├── tools.py                  # 5 个数据库工具 + 环境指纹 / 产物哈希
 ├── harness/
 │   ├── config.py             # 预算、阈值、TTL、路径
@@ -189,13 +188,3 @@ python -m unittest discover -s tests -v
 - **向量检索是内存暴力扫描**，几万条以内没问题；上规模换 Chroma / pgvector，接口已收在 `LongTermMemory.recall()`。
 - **恢复校验只核对"数据库现场"，不做自动修复**（修复可能产生副作用）；发现不一致就降级为 `unknown`，交给下一轮模型重新核实——宁可重查，不可编造。
 - 长期记忆抽取是正则 + 规则，不额外调模型（省钱、可解释）；要更强抽取可以在 `extract_and_store()` 里挂一个小模型。
-
-## 附录 · 无记忆基线（`agent_react.py`）
-
-`agent_react.py` 是同一套业务工具的**无记忆版本**：单文件 801 行、只保留最近 4 轮问答、不落盘，不依赖 `harness/`。
-
-它不参与主线，保留它的理由只有一个：想验证"记忆到底有没有用"时，用它跑同一个问题做对照。
-
-```bash
-python agent_react.py     # 可选，仅用于对照
-```

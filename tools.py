@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""数据库工具（与 agent_react.py 中同一套：4 个 CRUD + 1 个只读检索）。
+"""数据库工具：4 个 CRUD + 1 个只读检索，全部参数化查询、不向上抛异常。
 
-抽成独立模块，供 main.py（主线入口）使用；无记忆基线 agent_react.py 保持自带实现、可单独运行。
+供 main.py 使用；写操作显式 commit、异常 rollback，错误统一降级为结构化 JSON。
 """
 
 import inspect

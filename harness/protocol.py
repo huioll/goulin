@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""ReAct 文本协议解析（与 agent_react.py 中的实现同源）。
+"""ReAct 文本协议解析：把模型输出解析成 Thought / Action / Action Input 或 Final Answer。
 
-拆出来放进 harness，是为了让"带记忆的 Agent"不依赖那个无记忆的基线文件。
+容忍代码块包裹、中文引号、模型自造 Observation 等脏输出，解析失败以 error 字段回传而非抛异常。
 """
 
 import json
